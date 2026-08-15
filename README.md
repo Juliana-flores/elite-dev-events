@@ -1,1 +1,1 @@
-# plataforma-eventos
+# elite-dev-events
