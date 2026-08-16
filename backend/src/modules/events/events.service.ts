@@ -6,8 +6,10 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 
+import { Ticket } from '../tickets/entities/ticket.entity';
+import { TicketStatus } from '../tickets/enums/ticket-status.enum';
 import { CreateEventDto } from './dto/create-event.dto';
 import {
   EventDto,
@@ -27,6 +29,8 @@ export class EventsService {
   constructor(
     @InjectRepository(Event)
     private readonly eventsRepository: Repository<Event>,
+    @InjectRepository(Ticket)
+    private readonly ticketRepository: Repository<Ticket>,
   ) {}
 
   async create(organizerId: string, createDto: CreateEventDto): Promise<Event> {
@@ -219,8 +223,28 @@ export class EventsService {
       take: limit,
     });
 
+    const eventIds = events.map((e) => e.id);
+    let confirmedMap = new Map<string, number>();
+
+    if (eventIds.length > 0) {
+      const counts = await this.ticketRepository
+        .createQueryBuilder('ticket')
+        .select('ticket.eventId', 'eventId')
+        .addSelect('COUNT(ticket.id)', 'count')
+        .where('ticket.eventId IN (:...eventIds)', { eventIds })
+        .andWhere('ticket.status IN (:...statuses)', {
+          statuses: [TicketStatus.VALID, TicketStatus.USED],
+        })
+        .groupBy('ticket.eventId')
+        .getRawMany<{ eventId: string; count: string }>();
+
+      confirmedMap = new Map(
+        counts.map((c) => [c.eventId, Number(c.count) || 0]),
+      );
+    }
+
     const items: PublicEventDto[] = events.map((e) =>
-      this.mapToPublicEventDto(e),
+      this.mapToPublicEventDto(e, confirmedMap.get(e.id) || 0),
     );
     const totalPages = Math.ceil(totalItems / limit) || 1;
 
@@ -251,7 +275,14 @@ export class EventsService {
       });
     }
 
-    return this.mapToPublicEventDto(event);
+    const confirmedCount = await this.ticketRepository.count({
+      where: {
+        eventId,
+        status: In([TicketStatus.VALID, TicketStatus.USED]),
+      },
+    });
+
+    return this.mapToPublicEventDto(event, confirmedCount);
   }
 
   private mapToEventDto(event: Event): EventDto {
@@ -272,7 +303,12 @@ export class EventsService {
     };
   }
 
-  private mapToPublicEventDto(event: Event): PublicEventDto {
+  private mapToPublicEventDto(
+    event: Event,
+    confirmedTickets = 0,
+  ): PublicEventDto {
+    const availableTickets = Math.max(0, event.capacity - confirmedTickets);
+
     return {
       id: event.id,
       title: event.title,
@@ -281,7 +317,7 @@ export class EventsService {
       startsAt: event.startsAt,
       location: event.location,
       capacity: event.capacity,
-      availableTickets: event.capacity, // Derived availability projection
+      availableTickets,
       price: event.price,
       status: event.status,
     };

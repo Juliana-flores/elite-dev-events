@@ -7,6 +7,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
+import { Ticket } from '../tickets/entities/ticket.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -46,6 +47,20 @@ describe('EventsService', () => {
     findAndCount: jest.fn(),
   };
 
+  const mockTicketQueryBuilder = {
+    select: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    groupBy: jest.fn().mockReturnThis(),
+    getRawMany: jest.fn().mockResolvedValue([]),
+  };
+
+  const mockTicketRepository = {
+    count: jest.fn().mockResolvedValue(0),
+    createQueryBuilder: jest.fn().mockReturnValue(mockTicketQueryBuilder),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -53,6 +68,10 @@ describe('EventsService', () => {
         {
           provide: getRepositoryToken(Event),
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(Ticket),
+          useValue: mockTicketRepository,
         },
       ],
     }).compile();
@@ -66,78 +85,72 @@ describe('EventsService', () => {
   });
 
   describe('create', () => {
-    it('should create an event in DRAFT status and set organizerId', async () => {
-      const dto: CreateEventDto = {
+    it('should create an event in DRAFT status', async () => {
+      const createDto: CreateEventDto = {
         externalCatalogId: '157336',
-        title: 'Interstellar',
-        description: 'A team of explorers...',
-        imageUrl: 'https://image.tmdb.org/t/p/w500/poster.jpg',
+        title: ' Interstellar ',
+        description: ' Explorers ',
+        imageUrl: ' https://image.tmdb.org/poster.jpg ',
         startsAt: futureDate.toISOString(),
-        location: 'Cine Elite - Sala 1',
+        location: ' Cine Elite ',
         capacity: 120,
         price: '45.90',
       };
 
-      mockRepository.create.mockReturnValue(mockEvent);
-      mockRepository.save.mockResolvedValue(mockEvent);
+      mockRepository.create.mockReturnValue({ ...mockEvent });
+      mockRepository.save.mockResolvedValue({ ...mockEvent });
 
-      const result = await service.create(mockOrganizerId, dto);
+      const result = await service.create(mockOrganizerId, createDto);
 
       expect(mockRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           organizerId: mockOrganizerId,
-          status: EventStatus.DRAFT,
           title: 'Interstellar',
-          capacity: 120,
           price: '45.90',
+          status: EventStatus.DRAFT,
         }),
       );
-      expect(mockRepository.save).toHaveBeenCalledWith(mockEvent);
-      expect(result).toEqual(mockEvent);
+      expect(result.status).toBe(EventStatus.DRAFT);
     });
   });
 
   describe('updateDraft', () => {
-    it('should update draft event when user is the owner', async () => {
-      const dto: UpdateEventDto = {
-        location: 'Cine Elite - Sala 2',
+    it('should update draft event when user is owner', async () => {
+      const updateDto: UpdateEventDto = {
+        location: 'New Location',
         capacity: 150,
       };
 
-      const existingDraft = { ...mockEvent };
-      mockRepository.findOne.mockResolvedValue(existingDraft);
+      mockRepository.findOne.mockResolvedValue({ ...mockEvent });
       mockRepository.save.mockImplementation((e) => Promise.resolve(e));
 
       const result = await service.updateDraft(
         mockOrganizerId,
         mockEvent.id,
-        dto,
+        updateDto,
       );
 
-      expect(result.location).toBe('Cine Elite - Sala 2');
+      expect(result.location).toBe('New Location');
       expect(result.capacity).toBe(150);
     });
 
-    it('should throw 404 EVENT_NOT_FOUND if event does not exist', async () => {
+    it('should throw 404 EVENT_NOT_FOUND when event does not exist', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
       await expect(
-        service.updateDraft(mockOrganizerId, 'unknown-id', {}),
+        service.updateDraft(mockOrganizerId, 'nonexistent', {}),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw 403 EVENT_NOT_OWNED_BY_ORGANIZER if event belongs to another organizer', async () => {
-      mockRepository.findOne.mockResolvedValue({
-        ...mockEvent,
-        organizerId: otherOrganizerId,
-      });
+    it('should throw 403 EVENT_NOT_OWNED_BY_ORGANIZER when user is not owner', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockEvent });
 
       await expect(
-        service.updateDraft(mockOrganizerId, mockEvent.id, {}),
+        service.updateDraft(otherOrganizerId, mockEvent.id, {}),
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should throw 409 EVENT_ALREADY_PUBLISHED if event is already published', async () => {
+    it('should throw 409 EVENT_ALREADY_PUBLISHED when event is not in DRAFT', async () => {
       mockRepository.findOne.mockResolvedValue({
         ...mockEvent,
         status: EventStatus.PUBLISHED,
@@ -150,24 +163,17 @@ describe('EventsService', () => {
   });
 
   describe('publish', () => {
-    it('should publish a draft event successfully', async () => {
-      const existingDraft = { ...mockEvent, status: EventStatus.DRAFT };
-      mockRepository.findOne.mockResolvedValue(existingDraft);
-      mockRepository.save.mockResolvedValue({
-        ...existingDraft,
-        status: EventStatus.PUBLISHED,
-      });
+    it('should transition event from DRAFT to PUBLISHED', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockEvent });
+      mockRepository.save.mockImplementation((e) => Promise.resolve(e));
 
       const result = await service.publish(mockOrganizerId, mockEvent.id);
 
-      expect(result).toEqual({
-        id: mockEvent.id,
-        status: EventStatus.PUBLISHED,
-        published: true,
-      });
+      expect(result.status).toBe(EventStatus.PUBLISHED);
+      expect(result.published).toBe(true);
     });
 
-    it('should throw 409 EVENT_ALREADY_PUBLISHED when already published', async () => {
+    it('should throw 409 EVENT_ALREADY_PUBLISHED if event is already published', async () => {
       mockRepository.findOne.mockResolvedValue({
         ...mockEvent,
         status: EventStatus.PUBLISHED,
@@ -192,18 +198,22 @@ describe('EventsService', () => {
   });
 
   describe('findPublicEvents', () => {
-    it('should query only published events and project availableTickets', async () => {
+    it('should query published events and calculate availableTickets taking confirmed tickets into account', async () => {
       const publishedEvent = {
         ...mockEvent,
+        capacity: 100,
         status: EventStatus.PUBLISHED,
       };
 
       mockRepository.findAndCount.mockResolvedValue([[publishedEvent], 1]);
+      mockTicketQueryBuilder.getRawMany.mockResolvedValue([
+        { eventId: publishedEvent.id, count: '6' },
+      ]);
 
       const result = await service.findPublicEvents({
         search: 'Interstellar',
-        page: 0,
-        limit: 0,
+        page: 1,
+        limit: 20,
       });
 
       expect(result.items).toHaveLength(1);
@@ -211,7 +221,8 @@ describe('EventsService', () => {
         expect.objectContaining({
           id: publishedEvent.id,
           title: publishedEvent.title,
-          availableTickets: publishedEvent.capacity,
+          capacity: 100,
+          availableTickets: 94, // 100 - 6 = 94
           status: EventStatus.PUBLISHED,
         }),
       );
@@ -225,17 +236,20 @@ describe('EventsService', () => {
   });
 
   describe('findPublicEventById', () => {
-    it('should return published event details', async () => {
+    it('should return published event details with real-time availableTickets', async () => {
       const publishedEvent = {
         ...mockEvent,
+        capacity: 100,
         status: EventStatus.PUBLISHED,
       };
       mockRepository.findOne.mockResolvedValue(publishedEvent);
+      mockTicketRepository.count.mockResolvedValue(6);
 
       const result = await service.findPublicEventById(publishedEvent.id);
 
       expect(result.id).toBe(publishedEvent.id);
-      expect(result.availableTickets).toBe(publishedEvent.capacity);
+      expect(result.capacity).toBe(100);
+      expect(result.availableTickets).toBe(94); // 100 - 6 = 94
     });
 
     it('should throw 404 if event is not found or is still DRAFT', async () => {

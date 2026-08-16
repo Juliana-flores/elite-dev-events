@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import {
   CustomerTicketDetailDto,
   PaginatedCustomerTicketsResponseDto,
+  SharedTicketResponseDto,
 } from './dto/ticket-response.dto';
 import { Ticket } from './entities/ticket.entity';
 
@@ -104,6 +105,36 @@ export class TicketsService {
         imageUrl: ticket.event.imageUrl,
         startsAt: ticket.event.startsAt,
         location: ticket.event.location,
+      },
+    };
+  }
+
+  async findTicketByShareToken(
+    shareToken: string,
+  ): Promise<SharedTicketResponseDto> {
+    const ticket = await this.ticketRepository.findOne({
+      where: { shareToken },
+      relations: { event: true },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException({
+        statusCode: 404,
+        code: 'TICKET_NOT_FOUND',
+        message: 'Shared ticket not found',
+      });
+    }
+
+    return {
+      ticket: {
+        status: ticket.status,
+        qrPayload: ticket.secureCode,
+        event: {
+          title: ticket.event.title,
+          startsAt: ticket.event.startsAt,
+          location: ticket.event.location,
+          imageUrl: ticket.event.imageUrl,
+        },
       },
     };
   }

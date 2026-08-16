@@ -5,11 +5,13 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import * as jwtStrategy from '../auth/strategies/jwt.strategy';
 import { UserRole } from '../users/enums/user-role.enum';
 import { TicketStatus } from './enums/ticket-status.enum';
+import { PublicTicketsController } from './public-tickets.controller';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './tickets.service';
 
-describe('TicketsController', () => {
+describe('TicketsController and PublicTicketsController', () => {
   let controller: TicketsController;
+  let publicController: PublicTicketsController;
 
   const mockCustomerUser: jwtStrategy.AuthenticatedUser = {
     id: 'customer-uuid-1',
@@ -56,14 +58,28 @@ describe('TicketsController', () => {
     },
   };
 
+  const mockSharedTicketResponse = {
+    ticket: {
+      status: TicketStatus.VALID,
+      qrPayload: 'secure-token-123',
+      event: {
+        title: 'Interstellar',
+        startsAt: new Date(),
+        location: 'Cine Elite',
+        imageUrl: 'https://image.tmdb.org/poster.jpg',
+      },
+    },
+  };
+
   const mockTicketsService = {
     findCustomerTickets: jest.fn(),
     findCustomerTicketById: jest.fn(),
+    findTicketByShareToken: jest.fn(),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [TicketsController],
+      controllers: [TicketsController, PublicTicketsController],
       providers: [
         {
           provide: TicketsService,
@@ -78,11 +94,15 @@ describe('TicketsController', () => {
       .compile();
 
     controller = module.get<TicketsController>(TicketsController);
+    publicController = module.get<PublicTicketsController>(
+      PublicTicketsController,
+    );
     jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+    expect(publicController).toBeDefined();
   });
 
   it('should find customer tickets', async () => {
@@ -117,5 +137,19 @@ describe('TicketsController', () => {
       'ticket-1',
     );
     expect(result).toEqual(mockTicketDetail);
+  });
+
+  it('should find shared ticket by shareToken publicly', async () => {
+    mockTicketsService.findTicketByShareToken.mockResolvedValue(
+      mockSharedTicketResponse,
+    );
+
+    const result =
+      await publicController.findTicketByShareToken('share-token-456');
+
+    expect(mockTicketsService.findTicketByShareToken).toHaveBeenCalledWith(
+      'share-token-456',
+    );
+    expect(result).toEqual(mockSharedTicketResponse);
   });
 });

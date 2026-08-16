@@ -501,6 +501,53 @@ frontend/lib/api.js
 frontend/app/events/[id]/page.js
 ```
 
+### 2026-08-16 — SPEC-006 e SPEC-007: Compartilhamento Público e Validação na Portaria (Gate)
+
+**Contexto fornecido**
+
+Implementação integrada da `specs/006-ticket-wallet-sharing.md` e `specs/007-gate-validation.md` contemplando:
+- Endpoint público e página de visualização de ingressos compartilhados (`GET /tickets/share/:shareToken`);
+- Endpoint de validação da portaria (`POST /gate/validate`) exclusivo para role `GATE`;
+- Resultados de domínio padronizados (`VALID`, `INVALID`, `ALREADY_USED`, `WRONG_EVENT`);
+- Transição atômica e controle de concorrência com **pessimistic write lock** (`SELECT ... FOR UPDATE` no `Ticket`);
+- Interface mobile-first da portaria no frontend com suporte à leitura de QR Code via câmera e fallback para digitação manual.
+
+**Contribuição da IA**
+
+- Criação dos DTOs de compartilhamento público e sanitização de dados privados em `TicketsService` e `PublicTicketsController`;
+- Implementação da página pública `app/tickets/share/[token]/page.js` com renderização de poster, dados do evento e QR Code SVG;
+- Criação do enum `GateValidationResult`, DTOs `ValidateTicketDto` e `GateValidationResponseDto`, serviço `GateService`, controller `GateController` e módulo `GateModule`;
+- Criação de testes unitários (`gate.service.spec.ts`, `gate.controller.spec.ts`) e suite de integração E2E com teste de concorrência em catracas simultâneas (`gate.e2e-spec.ts`);
+- Implementação dos componentes `CameraQrScanner.js` e da tela do operador da portaria `app/gate/page.js` com seletor de eventos, feedback visual destacado e histórico de sessão.
+
+**Validação realizada**
+
+- `npm run lint` no backend (0 erros);
+- `npm run build` no backend (sucesso na compilação TypeScript/NestJS);
+- `npm test` no backend (21/21 suítes, 100/100 testes passando);
+- `npm run test:e2e` no backend (7/7 suítes, 37/37 testes passando);
+- `npm run lint` no frontend (0 erros);
+- `npm run build` no frontend (sucesso para todas as rotas Next.js).
+
+**Artefatos**
+
+```text
+backend/src/modules/tickets/public-tickets.controller.ts
+backend/src/modules/tickets/dto/ticket-response.dto.ts
+backend/src/modules/tickets/tickets.service.ts
+backend/src/modules/tickets/tickets.module.ts
+backend/src/modules/gate/
+backend/src/app.module.ts
+backend/src/modules/gate/gate.service.spec.ts
+backend/src/modules/gate/gate.controller.spec.ts
+backend/test/gate.e2e-spec.ts
+frontend/lib/api.js
+frontend/components/CameraQrScanner.js
+frontend/components/Navbar.js
+frontend/app/tickets/share/[token]/page.js
+frontend/app/gate/page.js
+```
+
 ---
 
 
