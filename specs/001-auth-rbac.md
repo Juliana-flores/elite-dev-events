@@ -139,20 +139,20 @@ Seed:
 
 ## Backend tasks
 
-- [ ] configurar TypeORM;
-- [ ] criar `User` entity;
-- [ ] migration `users`;
-- [ ] criar seed;
-- [ ] implementar hashing;
-- [ ] implementar `AuthService`;
-- [ ] implementar login;
-- [ ] implementar JWT strategy;
-- [ ] implementar `JwtAuthGuard`;
-- [ ] implementar `@Roles`;
-- [ ] implementar `RolesGuard`;
-- [ ] implementar `/auth/me`;
-- [ ] padronizar erros de auth;
-- [ ] documentar Swagger.
+- [x] configurar TypeORM;
+- [x] criar `User` entity;
+- [x] migration `users`;
+- [x] criar seed;
+- [x] implementar hashing;
+- [x] implementar `AuthService`;
+- [x] implementar login;
+- [x] implementar JWT strategy;
+- [x] implementar `JwtAuthGuard`;
+- [x] implementar `@Roles`;
+- [x] implementar `RolesGuard`;
+- [x] implementar `/auth/me`;
+- [x] padronizar erros de auth;
+- [x] documentar Swagger.
 
 ---
 
