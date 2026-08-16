@@ -39,6 +39,19 @@ export default function Navbar() {
               Eventos Públicos
             </Link>
 
+            {isAuthenticated && user?.role === 'CUSTOMER' && (
+              <Link
+                href="/me/tickets"
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  isActive('/me/tickets')
+                    ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white'
+                    : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                Meus Ingressos
+              </Link>
+            )}
+
             {isAuthenticated && user?.role === 'ORGANIZER' && (
               <>
                 <Link

@@ -452,7 +452,54 @@ A IA auxiliou na implementação incremental do frontend Next.js para:
 **Artefatos**
 
 
-- `frontend/`
+### 2026-08-16 — SPEC-004 e SPEC-005: Reservations, Payments, Capacity Locking & Tickets
+
+**Contexto fornecido**
+
+Implementação integrada da `specs/004-reservations.md` e `specs/005-payment-capacity-tickets.md` abrangendo:
+- Criação e consulta de reservas (`Reservation`) com snapshot de preço e validações de publicação/data;
+- Simulação de pagamentos (`Payment`) determinísticos (`APPROVE` e `DECLINE`);
+- Controle transacional atômico de capacidade com pessimistic write lock (`SELECT ... FOR UPDATE` no `Event`);
+- Emissão criptográfica de ingressos (`Ticket`) com `secureCode` e `shareToken` únicos;
+- Endpoints do cliente (`GET /me/tickets`, `GET /me/tickets/:id`);
+- Interface completa de checkout no frontend Next.js, listagem de ingressos e visualização com QR Code em SVG.
+
+**Contribuição da IA**
+
+- Definição dos enums `ReservationStatus`, `PaymentStatus`, `PaymentSimulation`, `TicketStatus` e entidades TypeORM correspondentes;
+- Criação das migrations versionadas `1786870001537-CreateReservationsTable.ts` e `1786880001538-CreatePaymentsAndTicketsTables.ts`;
+- Implementação de `ReservationsService`, `PaymentsService` com pessimistic locking e `TicketsService`;
+- Criação do provider `FakePaymentProvider` e controllers com guardas RBAC (`@Roles(UserRole.CUSTOMER)`);
+- Criação dos testes unitários (19 suítes, 90 testes) e testes de integração E2E com teste explícito de concorrência contra overselling;
+- Implementação no frontend das páginas de checkout (`app/checkout/[id]`), "Meus Ingressos" (`app/me/tickets`), detalhes com QR Code (`app/me/tickets/[id]`), componente `QrCode.js`, seletor dinâmico de quantidade em `app/events/[id]` e atualização da `Navbar.js`.
+
+**Validação realizada**
+
+- `npm run lint` no backend (0 erros);
+- `npm run build` no backend (sucesso com TypeScript compilado sem erros);
+- `npm test` no backend (19/19 suítes, 90/90 testes passando);
+- `npm run test:e2e` no backend (6/6 suítes, 31/31 testes passando);
+- `npm run lint` no frontend (0 erros);
+- `npm run build` no frontend (sucesso para todas as 11 rotas Next.js Turbopack).
+
+**Artefatos**
+
+```text
+backend/src/modules/reservations/
+backend/src/modules/payments/
+backend/src/modules/tickets/
+backend/src/database/migrations/1786870001537-CreateReservationsTable.ts
+backend/src/database/migrations/1786880001538-CreatePaymentsAndTicketsTables.ts
+backend/test/reservations.e2e-spec.ts
+backend/test/payments.e2e-spec.ts
+frontend/app/checkout/[id]/page.js
+frontend/app/me/tickets/page.js
+frontend/app/me/tickets/[id]/page.js
+frontend/components/QrCode.js
+frontend/components/Navbar.js
+frontend/lib/api.js
+frontend/app/events/[id]/page.js
+```
 
 ---
 
