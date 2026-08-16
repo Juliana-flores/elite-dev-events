@@ -3,17 +3,24 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Alert from '../../../components/Alert';
+import { useAuth } from '../../../context/AuthContext';
 import { api, ApiClientError } from '../../../lib/api';
 import { formatDate, formatPrice } from '../../../lib/formatters';
 
 export default function PublicEventDetailPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
   const eventId = params.id;
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
 
   const [event, setEvent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorState, setErrorState] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionError, setActionError] = useState(null);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -52,6 +59,43 @@ export default function PublicEventDetailPage({ params: paramsPromise }) {
     }
   }, [eventId]);
 
+  const handleReserve = async () => {
+    setActionError(null);
+
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (user?.role !== 'CUSTOMER') {
+      setActionError(
+        'Apenas usuários com perfil de Cliente (CUSTOMER) podem comprar ingressos.',
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const reservation = await api.createReservation(eventId, Number(quantity));
+      router.push(`/checkout/${reservation.id}`);
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        if (err.code === 'EVENT_SOLD_OUT') {
+          setActionError('Não há ingressos suficientes disponíveis para este evento.');
+        } else if (err.code === 'EVENT_ALREADY_STARTED') {
+          setActionError('Este evento já iniciou ou encerrou.');
+        } else {
+          setActionError(err.message || 'Não foi possível criar a reserva.');
+        }
+      } else {
+        setActionError('Ocorreu um erro ao criar sua reserva.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -82,6 +126,9 @@ export default function PublicEventDetailPage({ params: paramsPromise }) {
   if (!event) return null;
 
   const isSoldOut = event.availableTickets !== undefined && event.availableTickets <= 0;
+  const maxAvailable = event.availableTickets !== undefined ? Math.min(10, event.availableTickets) : 10;
+  const unitPrice = parseFloat(event.price) || 0;
+  const subtotal = (unitPrice * quantity).toFixed(2);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8 py-4">
@@ -121,7 +168,7 @@ export default function PublicEventDetailPage({ params: paramsPromise }) {
               {event.title}
             </h1>
             <p className="text-xl font-bold text-emerald-400">
-              {formatPrice(event.price)}
+              {formatPrice(event.price)} <span className="text-xs font-normal text-zinc-400">/ ingresso</span>
             </p>
           </div>
 
@@ -173,19 +220,81 @@ export default function PublicEventDetailPage({ params: paramsPromise }) {
             </div>
           )}
 
-          {/* Reservation Placeholder Banner (Conforms to Scope Constraints) */}
-          <div className="rounded-2xl border border-indigo-900/40 bg-indigo-950/20 p-5 backdrop-blur-md">
-            <div className="flex items-start gap-3">
-              <span className="text-lg">🎟️</span>
-              <div className="space-y-1">
-                <h3 className="text-sm font-semibold text-indigo-200">
-                  Reserva e Venda de Ingressos
+          {/* Checkout & Reservation Section */}
+          <div className="rounded-2xl border border-indigo-900/50 bg-gradient-to-br from-indigo-950/40 via-zinc-900 to-zinc-950 p-6 shadow-xl backdrop-blur-md space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-white">
+                  Comprar Ingressos
                 </h3>
-                <p className="text-xs text-indigo-300/80 leading-relaxed">
-                  O módulo de reservas e pagamentos será disponibilizado na próxima etapa do sistema conforme a especificação.
+                <p className="text-xs text-zinc-400">
+                  Selecione a quantidade de ingressos desejada
                 </p>
               </div>
+
+              {!isSoldOut && (
+                <div className="text-right">
+                  <span className="text-xs text-zinc-400 block">Total Previsto</span>
+                  <span className="text-lg font-extrabold text-emerald-400">
+                    {formatPrice(subtotal)}
+                  </span>
+                </div>
+              )}
             </div>
+
+            {actionError && <Alert type="error" message={actionError} />}
+
+            {isSoldOut ? (
+              <div className="rounded-xl border border-rose-900/40 bg-rose-950/20 p-4 text-center">
+                <p className="text-sm font-semibold text-rose-400">
+                  Este evento está esgotado no momento.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <label htmlFor="quantity" className="text-xs font-semibold text-zinc-300">
+                    Quantidade:
+                  </label>
+                  <select
+                    id="quantity"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    disabled={isSubmitting}
+                    className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm font-bold text-white focus:border-indigo-500 focus:outline-none"
+                  >
+                    {Array.from({ length: maxAvailable }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>
+                        {n} {n === 1 ? 'ingresso' : 'ingressos'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleReserve}
+                  disabled={isSubmitting}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Gerando Reserva...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🎟️</span>
+                      <span>
+                        {isAuthenticated
+                          ? `Reservar ${quantity} ${quantity === 1 ? 'Ingresso' : 'Ingressos'}`
+                          : 'Entrar para Comprar Ingressos'}
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

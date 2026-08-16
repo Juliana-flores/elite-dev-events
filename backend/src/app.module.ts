@@ -7,6 +7,9 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { EventsModule } from './modules/events/events.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
+import { TicketsModule } from './modules/tickets/tickets.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -39,6 +42,9 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     CatalogModule,
     EventsModule,
+    ReservationsModule,
+    PaymentsModule,
+    TicketsModule,
   ],
 
   controllers: [AppController],

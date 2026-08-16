@@ -1,0 +1,6 @@
+export enum ReservationStatus {
+  PENDING_PAYMENT = 'PENDING_PAYMENT',
+  PAID = 'PAID',
+  PAYMENT_FAILED = 'PAYMENT_FAILED',
+  CANCELLED = 'CANCELLED',
+}

@@ -42,7 +42,7 @@ async function request(endpoint, options = {}) {
   let response;
   try {
     response = await fetch(url, config);
-  } catch (err) {
+  } catch (_err) {
     throw new ApiClientError({
       statusCode: 0,
       code: 'NETWORK_ERROR',
@@ -84,6 +84,25 @@ export const api = {
   post: (endpoint, body, options) => request(endpoint, { method: 'POST', body, ...options }),
   patch: (endpoint, body, options) => request(endpoint, { method: 'PATCH', body, ...options }),
   delete: (endpoint, options) => request(endpoint, { method: 'DELETE', ...options }),
+
+  // Reservations
+  createReservation: (eventId, quantity) =>
+    request('/reservations', { method: 'POST', body: { eventId, quantity } }),
+  getReservation: (reservationId) =>
+    request(`/reservations/${reservationId}`, { method: 'GET' }),
+
+  // Payments
+  processPayment: (reservationId, simulation) =>
+    request(`/reservations/${reservationId}/payment`, {
+      method: 'POST',
+      body: { simulation },
+    }),
+
+  // Tickets
+  getMyTickets: (page = 1, limit = 20) =>
+    request(`/me/tickets?page=${page}&limit=${limit}`, { method: 'GET' }),
+  getMyTicket: (ticketId) =>
+    request(`/me/tickets/${ticketId}`, { method: 'GET' }),
 };
 
 export default api;
