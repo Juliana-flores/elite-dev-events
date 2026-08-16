@@ -105,15 +105,15 @@ A persistência acontece apenas quando o organizer cria um `Event` na próxima s
 
 ## Backend tasks
 
-- [ ] criar `CatalogModule`;
-- [ ] definir contrato/provider;
-- [ ] implementar `TmdbProvider`;
-- [ ] configuração `TMDB_API_KEY`;
-- [ ] mapear response externa;
-- [ ] criar controller;
-- [ ] proteger rota por `ORGANIZER`;
-- [ ] tratar timeout/falhas;
-- [ ] documentar Swagger.
+- [x] criar `CatalogModule`;
+- [x] definir contrato/provider;
+- [x] implementar `TmdbProvider`;
+- [x] configuração `TMDB_API_KEY`;
+- [x] mapear response externa;
+- [x] criar controller;
+- [x] proteger rota por `ORGANIZER`;
+- [x] tratar timeout/falhas;
+- [x] documentar Swagger.
 
 ---
 

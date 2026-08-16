@@ -120,18 +120,18 @@ Constraints conforme `DATABASE.md`.
 
 ## Backend tasks
 
-- [ ] Event entity;
-- [ ] migration;
-- [ ] create event;
-- [ ] update draft;
-- [ ] ownership;
-- [ ] publish transition;
-- [ ] organizer listing;
-- [ ] public listing;
-- [ ] title search;
-- [ ] public detail;
-- [ ] availability projection;
-- [ ] Swagger.
+- [x] Event entity;
+- [x] migration;
+- [x] create event;
+- [x] update draft;
+- [x] ownership;
+- [x] publish transition;
+- [x] organizer listing;
+- [x] public listing;
+- [x] title search;
+- [x] public detail;
+- [x] availability projection;
+- [x] Swagger.
 
 ---
 

@@ -425,6 +425,35 @@ backend/test/events.e2e-spec.ts
 specs/003-events.md
 ```
 
+### 2026-08-16 — Frontend SPEC-001 a SPEC-003
+
+
+**Contribuição da IA**
+
+
+A IA auxiliou na implementação incremental do frontend Next.js para:
+- autenticação;
+- gerenciamento de sessão;
+- catálogo TMDb;
+- criação e publicação de eventos;
+- descoberta pública de eventos.
+
+
+**Validação realizada**
+
+
+- revisão dos contratos definidos em `API.md`;
+- `npm run lint`;
+- `npm run build`;
+- integração com endpoints reais do backend;
+- execução da suíte de testes do backend.
+
+
+**Artefatos**
+
+
+- `frontend/`
+
 ---
 
 
