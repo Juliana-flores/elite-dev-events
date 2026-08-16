@@ -252,6 +252,92 @@ specs/
 
 ---
 
+### 2026-08-16 — SPEC-001: Autenticação e RBAC (Backend)
+
+**Ferramenta**
+
+Antigravity.
+
+**Contexto fornecido**
+
+`specs/001-auth-rbac.md`, `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/GUARDRAILS.md`, `AGENTS.md`.
+
+**Contribuição da IA**
+
+- Implementação de `JwtStrategy`, `JwtAuthGuard`, `@Roles`, `RolesGuard` e endpoint `GET /api/v1/auth/me`;
+- Testes unitários para `JwtStrategy`, `JwtAuthGuard`, `RolesGuard` e `AuthController`;
+- Testes de integração/E2E cobrindo login válido, login inválido, rota sem token, token válido, role correta, role incorreta, `/auth/me` e garantia de ausência de `passwordHash`.
+
+**Decisões humanas**
+
+- Manter RBAC executado estritamente no backend sem dependências externas adicionais;
+- Garantir que `passwordHash` seja sempre omitido em todas as respostas da API.
+
+**Validação realizada**
+
+- `npm run lint` (0 erros);
+- `npm run build` (sucesso);
+- `npm test` (7 suites, 30 testes passando);
+- `npm run test:e2e` (2 suites, 10 testes passando).
+
+**Artefatos**
+
+```text
+backend/src/modules/auth/strategies/jwt.strategy.ts
+backend/src/modules/auth/guards/jwt-auth.guard.ts
+backend/src/modules/auth/guards/roles.guard.ts
+backend/src/modules/auth/decorators/roles.decorator.ts
+backend/src/modules/auth/decorators/current-user.decorator.ts
+backend/src/modules/auth/auth.controller.ts
+backend/src/modules/auth/auth.module.ts
+backend/src/modules/auth/strategies/jwt.strategy.spec.ts
+backend/src/modules/auth/guards/jwt-auth.guard.spec.ts
+backend/src/modules/auth/guards/roles.guard.spec.ts
+backend/src/modules/auth/auth.controller.spec.ts
+backend/test/auth.e2e-spec.ts
+```
+
+### 2026-08-16 — Swagger / OpenAPI Documentation (SPEC-001)
+
+**Ferramenta**
+
+Antigravity (Gemini 2.5 Flash)
+
+**Contexto fornecido**
+
+Necessidade de documentação OpenAPI/Swagger para atender aos requisitos de Definition of Done da `specs/001-auth-rbac.md`.
+
+**Contribuição da IA**
+
+- Instalação e configuração do pacote `@nestjs/swagger` em `main.ts`;
+- Adição dos DTOs de resposta (`AuthUserDto`, `LoginResponseDto`, `ApiErrorResponseDto`) com decoradores `@ApiProperty`;
+- Anotação do `AuthController` com `@ApiTags('auth')`, `@ApiOperation`, `@ApiResponse`, `@ApiBearerAuth`;
+- Atualização do checklist de tarefas do backend na spec.
+
+**Decisões humanas**
+
+- Manter a rota de documentação Swagger acessível em `/api/docs`;
+- Suportar autenticação Bearer JWT na interface do Swagger com esquema `JWT-auth`.
+
+**Validação realizada**
+
+- `npx tsc --noEmit` (0 erros de compilação);
+- `npm test` (7 suites, 30 testes passando);
+- `npm run lint` (0 erros).
+
+**Artefatos**
+
+```text
+backend/src/main.ts
+backend/src/modules/auth/dto/login.dto.ts
+backend/src/modules/auth/dto/auth-response.dto.ts
+backend/src/modules/auth/auth.controller.ts
+specs/001-auth-rbac.md
+```
+
+---
+
+
 ## 5. Template para novos registros
 
 Copiar para futuras fases:
