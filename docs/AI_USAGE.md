@@ -254,9 +254,6 @@ specs/
 
 ### 2026-08-16 — SPEC-001: Autenticação e RBAC (Backend)
 
-**Ferramenta**
-
-Antigravity.
 
 **Contexto fornecido**
 
@@ -299,9 +296,6 @@ backend/test/auth.e2e-spec.ts
 
 ### 2026-08-16 — Swagger / OpenAPI Documentation (SPEC-001)
 
-**Ferramenta**
-
-Antigravity (Gemini 2.5 Flash)
 
 **Contexto fornecido**
 
@@ -333,6 +327,102 @@ backend/src/modules/auth/dto/login.dto.ts
 backend/src/modules/auth/dto/auth-response.dto.ts
 backend/src/modules/auth/auth.controller.ts
 specs/001-auth-rbac.md
+```
+
+### 2026-08-16 — SPEC-002: TMDb External Catalog
+
+
+**Contexto fornecido**
+
+Implementação da `specs/002-catalog.md` (Catálogo externo da TMDb, provider abstraction, endpoint `GET /api/v1/catalog/movies` protegido para `ORGANIZER` e tratamento de erros 502 `CATALOG_PROVIDER_UNAVAILABLE`).
+
+**Contribuição da IA**
+
+- Definição da interface e token de injeção `CATALOG_PROVIDER` e modelo de domínio `CatalogSearchResult`;
+- Implementação de `TmdbProvider` consumindo a API da TMDb via `fetch` nativo com timeout, suporte a Bearer token/API Key e normalização de poster/backdrop para URLs completas;
+- Criação de `CatalogService`, `CatalogController` e `CatalogModule`;
+- Criação de DTOs com validação (`SearchMoviesQueryDto`) e Swagger (`CatalogMoviesResponseDto`);
+- Adição de testes unitários (`tmdb.provider.spec.ts`, `catalog.service.spec.ts`, `catalog.controller.spec.ts`) e suite de integração E2E (`catalog.e2e-spec.ts`);
+- Atualização do checklist em `specs/002-catalog.md` e variáveis de ambiente em `backend/.env.example`.
+
+**Decisões humanas**
+
+- Utilizar `fetch` nativo com `AbortController` ao invés de adicionar dependências externas de HTTP;
+- Tratar indisponibilidade da TMDb com código de erro de domínio `502 CATALOG_PROVIDER_UNAVAILABLE`.
+
+**Validação realizada**
+
+- `npx tsc --noEmit` (0 erros de compilação);
+- `npm test` (10 suites, 40 testes passando);
+- `npm run test:e2e` (3 suites, 15 testes passando);
+- `npm run lint` (0 erros).
+
+**Artefatos**
+
+```text
+backend/src/modules/catalog/providers/catalog-provider.interface.ts
+backend/src/modules/catalog/providers/tmdb.provider.ts
+backend/src/modules/catalog/dto/search-movies-query.dto.ts
+backend/src/modules/catalog/dto/catalog-movies-response.dto.ts
+backend/src/modules/catalog/catalog.service.ts
+backend/src/modules/catalog/catalog.controller.ts
+backend/src/modules/catalog/catalog.module.ts
+backend/src/modules/catalog/providers/tmdb.provider.spec.ts
+backend/src/modules/catalog/catalog.service.spec.ts
+backend/src/modules/catalog/catalog.controller.spec.ts
+backend/test/catalog.e2e-spec.ts
+specs/002-catalog.md
+backend/.env.example
+```
+
+### 2026-08-16 — SPEC-003: Event Management and Discovery
+
+
+**Contexto fornecido**
+
+Implementação da `specs/003-events.md` (criação de eventos em `DRAFT`, atualização de draft pelo owner, publicação com validações, listagem do organizador, descoberta pública com busca por título e projeção de `availableTickets`).
+
+**Contribuição da IA**
+
+- Definição do enum `EventStatus` e entidade TypeORM `Event` com constraints (`capacity > 0`, `price >= 0`) e índices `(status, startsAt)` e `(organizerId)`;
+- Criação da migration versionada `1786860001536-CreateEventsTable.ts`;
+- Implementação de `EventsService` com checagens de ownership, transição para `PUBLISHED`, validação de data futura e projeção de disponibilidade;
+- Criação de `EventsController` e `OrganizerEventsController` com decorators de validação, RBAC (`@Roles(UserRole.ORGANIZER)`), `@CurrentUser` e documentação Swagger;
+- Criação de DTOs com validação (`CreateEventDto`, `UpdateEventDto`, `QueryEventsDto`, `QueryOrganizerEventsDto`, `EventDto`, `PublicEventDto`);
+- Adição de testes unitários (`events.service.spec.ts`, `events.controller.spec.ts`) e suite completa de integração E2E (`events.e2e-spec.ts`);
+- Atualização do checklist de tarefas em `specs/003-events.md`.
+
+**Decisões humanas**
+
+- Separar endpoints públicos e autenticados de organizador preservando as rotas da API (`/events` e `/organizer/events`);
+- Garantir que `organizerId` seja extraído exclusivamente do token JWT autenticado.
+
+**Validação realizada**
+
+- `npx tsc --noEmit` (0 erros de compilação);
+- `npm test` (12 suites, 58 testes passando);
+- `npm run test:e2e` (4 suites, 20 testes passando);
+- `npm run lint` (0 erros).
+
+**Artefatos**
+
+```text
+backend/src/modules/events/enums/event-status.enum.ts
+backend/src/modules/events/entities/event.entity.ts
+backend/src/database/migrations/1786860001536-CreateEventsTable.ts
+backend/src/modules/events/dto/create-event.dto.ts
+backend/src/modules/events/dto/update-event.dto.ts
+backend/src/modules/events/dto/query-events.dto.ts
+backend/src/modules/events/dto/query-organizer-events.dto.ts
+backend/src/modules/events/dto/event-response.dto.ts
+backend/src/modules/events/events.service.ts
+backend/src/modules/events/events.controller.ts
+backend/src/modules/events/organizer-events.controller.ts
+backend/src/modules/events/events.module.ts
+backend/src/modules/events/events.service.spec.ts
+backend/src/modules/events/events.controller.spec.ts
+backend/test/events.e2e-spec.ts
+specs/003-events.md
 ```
 
 ---
