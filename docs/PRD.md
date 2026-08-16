@@ -637,7 +637,7 @@ PostgreSQL
 ## ORM
 
 ```text
-Prisma
+TypeORM
 ```
 
 ## Autenticação
