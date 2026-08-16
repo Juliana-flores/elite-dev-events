@@ -17,6 +17,8 @@ import { OrganizerEventsController } from '../src/modules/events/organizer-event
 import { UserRole } from '../src/modules/users/enums/user-role.enum';
 import { UsersService } from '../src/modules/users/users.service';
 
+import { Ticket } from '../src/modules/tickets/entities/ticket.entity';
+
 describe('Events Integration / E2E', () => {
   let app: INestApplication<App>;
   let jwtService: JwtService;
@@ -95,6 +97,18 @@ describe('Events Integration / E2E', () => {
     ),
   };
 
+  const mockTicketRepository = {
+    count: jest.fn().mockResolvedValue(0),
+    createQueryBuilder: jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    }),
+  };
+
   const mockUsersService = {
     findById: jest.fn((id: string) => {
       if (id === mockOrganizer1.id) return Promise.resolve(mockOrganizer1);
@@ -142,6 +156,10 @@ describe('Events Integration / E2E', () => {
         {
           provide: getRepositoryToken(Event),
           useValue: mockEventsRepository,
+        },
+        {
+          provide: getRepositoryToken(Ticket),
+          useValue: mockTicketRepository,
         },
       ],
     }).compile();

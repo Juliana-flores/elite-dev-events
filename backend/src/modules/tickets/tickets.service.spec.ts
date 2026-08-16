@@ -140,4 +140,37 @@ describe('TicketsService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
   });
+
+  describe('findTicketByShareToken', () => {
+    it('should return sanitized public ticket data without private fields', async () => {
+      mockTicketRepository.findOne.mockResolvedValue(mockTicket);
+
+      const result = await service.findTicketByShareToken(
+        mockTicket.shareToken,
+      );
+
+      expect(result).toEqual({
+        ticket: {
+          status: TicketStatus.VALID,
+          qrPayload: mockTicket.secureCode,
+          event: {
+            title: 'Interstellar',
+            startsAt: mockEvent.startsAt,
+            location: 'Cine Elite',
+            imageUrl: 'https://image.tmdb.org/poster.jpg',
+          },
+        },
+      });
+      expect(result.ticket).not.toHaveProperty('customerId');
+      expect(result.ticket).not.toHaveProperty('reservationId');
+    });
+
+    it('should throw 404 TICKET_NOT_FOUND when shareToken does not exist', async () => {
+      mockTicketRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.findTicketByShareToken('invalid-share-token'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });

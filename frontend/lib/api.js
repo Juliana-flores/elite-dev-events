@@ -103,6 +103,12 @@ export const api = {
     request(`/me/tickets?page=${page}&limit=${limit}`, { method: 'GET' }),
   getMyTicket: (ticketId) =>
     request(`/me/tickets/${ticketId}`, { method: 'GET' }),
+  getSharedTicket: (shareToken) =>
+    request(`/tickets/share/${shareToken}`, { method: 'GET' }),
+
+  // Gate
+  validateGateTicket: (eventId, code) =>
+    request('/gate/validate', { method: 'POST', body: { eventId, code } }),
 };
 
 export default api;

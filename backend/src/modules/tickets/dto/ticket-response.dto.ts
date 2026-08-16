@@ -78,6 +78,45 @@ export class CustomerTicketDetailDto {
   event!: TicketEventSummaryDto;
 }
 
+export class SharedTicketEventDto {
+  @ApiProperty({ example: 'Interstellar' })
+  title!: string;
+
+  @ApiProperty({ example: '2026-09-20T22:00:00.000Z' })
+  startsAt!: Date;
+
+  @ApiProperty({ example: 'Cine Elite - Sala 1' })
+  location!: string;
+
+  @ApiProperty({
+    example: 'https://image.tmdb.org/t/p/w500/poster.jpg',
+    nullable: true,
+  })
+  imageUrl!: string | null;
+}
+
+export class SharedTicketDataDto {
+  @ApiProperty({
+    enum: TicketStatus,
+    example: TicketStatus.VALID,
+  })
+  status!: TicketStatus;
+
+  @ApiProperty({
+    description: 'Secure QR Code payload for door validation',
+    example: 'a4b8c9d0e1f2...',
+  })
+  qrPayload!: string;
+
+  @ApiProperty({ type: SharedTicketEventDto })
+  event!: SharedTicketEventDto;
+}
+
+export class SharedTicketResponseDto {
+  @ApiProperty({ type: SharedTicketDataDto })
+  ticket!: SharedTicketDataDto;
+}
+
 export class TicketsPaginationDto {
   @ApiProperty({ example: 1 })
   page!: number;
