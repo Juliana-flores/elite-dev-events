@@ -7,6 +7,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
+import { Reservation } from '../reservations/entities/reservation.entity';
 import { Ticket } from '../tickets/entities/ticket.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -43,6 +44,7 @@ describe('EventsService', () => {
   const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
+    remove: jest.fn(),
     findOne: jest.fn(),
     findAndCount: jest.fn(),
   };
@@ -61,6 +63,10 @@ describe('EventsService', () => {
     createQueryBuilder: jest.fn().mockReturnValue(mockTicketQueryBuilder),
   };
 
+  const mockReservationRepository = {
+    count: jest.fn().mockResolvedValue(0),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -72,6 +78,10 @@ describe('EventsService', () => {
         {
           provide: getRepositoryToken(Ticket),
           useValue: mockTicketRepository,
+        },
+        {
+          provide: getRepositoryToken(Reservation),
+          useValue: mockReservationRepository,
         },
       ],
     }).compile();
@@ -258,6 +268,65 @@ describe('EventsService', () => {
       await expect(
         service.findPublicEventById('draft-or-missing-id'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete event when user is owner and there are no tickets or reservations', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockEvent });
+      mockTicketRepository.count.mockResolvedValue(0);
+      mockReservationRepository.count.mockResolvedValue(0);
+      mockRepository.remove.mockResolvedValue({ ...mockEvent });
+
+      await service.delete(mockOrganizerId, mockEvent.id);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockEvent.id },
+      });
+      expect(mockTicketRepository.count).toHaveBeenCalledWith({
+        where: { eventId: mockEvent.id },
+      });
+      expect(mockReservationRepository.count).toHaveBeenCalledWith({
+        where: { eventId: mockEvent.id },
+      });
+      expect(mockRepository.remove).toHaveBeenCalledWith(
+        expect.objectContaining({ id: mockEvent.id }),
+      );
+    });
+
+    it('should throw 404 EVENT_NOT_FOUND when event does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.delete(mockOrganizerId, 'non-existent-id'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw 403 EVENT_NOT_OWNED_BY_ORGANIZER when user is not owner', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockEvent });
+
+      await expect(
+        service.delete(otherOrganizerId, mockEvent.id),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw 409 EVENT_CANNOT_BE_DELETED when event has tickets', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockEvent });
+      mockTicketRepository.count.mockResolvedValue(3);
+
+      await expect(
+        service.delete(mockOrganizerId, mockEvent.id),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw 409 EVENT_CANNOT_BE_DELETED when event has reservations', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockEvent });
+      mockTicketRepository.count.mockResolvedValue(0);
+      mockReservationRepository.count.mockResolvedValue(2);
+
+      await expect(
+        service.delete(mockOrganizerId, mockEvent.id),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });

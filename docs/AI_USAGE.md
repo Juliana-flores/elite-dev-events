@@ -548,7 +548,85 @@ frontend/app/tickets/share/[token]/page.js
 frontend/app/gate/page.js
 ```
 
+### 2026-08-16 — Hardening de Release: Seed Idempotente Completo
+
+**Contexto fornecido**
+
+Revisão dos requisitos finais de seed e demonstração do desafio técnico:
+- 1 ORGANIZER, 2 CUSTOMER, 1 GATE;
+- Pelo menos 1 evento `PUBLISHED` com data `startsAt` futura e capacidade disponível;
+- Execução com garantia de idempotência estrita.
+
+**Contribuição da IA**
+
+- Diagnóstico e matriz de conformidade do seed existente (`user.seed.ts`);
+- Implementação de [seed.ts](file:///C:/plataforma-eventos/backend/src/database/seeds/seed.ts) orquestrando o provisionamento de usuários e do evento publicado inicial de forma idempotente (atualizando registros existentes e garantindo data futura);
+- Atualização do script `seed` em [package.json](file:///C:/plataforma-eventos/backend/package.json) e retrocompatibilidade com [user.seed.ts](file:///C:/plataforma-eventos/backend/src/database/seeds/user.seed.ts).
+
+**Decisões humanas**
+
+- Manter dados e credenciais conhecidos consistentes com os atalhos de login do frontend;
+- Garantir que execuções sucessivas do seed atualizem a data para o futuro sem duplicar registros no banco.
+
+**Validação realizada**
+
+- Execução múltipla de `npm run seed` no backend com validação de idempotência;
+- `npm run lint` (0 erros);
+- `npm test` (21/21 suítes, 100/100 testes passando).
+
+**Artefatos**
+
+```text
+backend/src/database/seeds/seed.ts
+backend/src/database/seeds/user.seed.ts
+backend/package.json
+```
+
+### 2026-08-16 — Exclusão de Eventos pelo Organizador (Backend & Frontend)
+
+**Contexto fornecido**
+
+Requisito para permitir que o organizador proprietário do evento possa excluí-lo diretamente pelo painel e pela página de edição, com preservação de integridade referencial e validações de segurança.
+
+**Contribuição da IA**
+
+- Elaboração e apresentação do plano de implementação técnico detalhado;
+- Implementação de `DELETE /api/v1/events/:eventId` com código `204 No Content`, validação de ownership (`403`), existência (`404`) e proteção contra exclusão de eventos com ingressos ou reservas associadas (`409`);
+- Injeção e checagem de integridade em `EventsService` para `Ticket` e `Reservation`;
+- Adição de testes unitários e E2E cobrindo sucesso, falhas de autorização e integridade;
+- Implementação no frontend dos botões de exclusão com diálogo de confirmação em `EventCard.js`, listagem de eventos do organizador e formulário de edição de evento;
+- Atualização do contrato REST em `docs/API.md`.
+
+**Decisões humanas**
+
+- Restringir a exclusão estritamente ao criador do evento (`organizerId` derivado do JWT);
+- Proibir exclusão se já houver compras ou reservas ativas associadas ao evento.
+
+**Validação realizada**
+
+- `npm run lint` no backend e frontend (0 erros);
+- `npm test` no backend (21 suítes, 105 testes passando);
+- `npm run test:e2e` no backend (7 suítes, 38 testes passando);
+- `npm run build` no backend e frontend (100% sucesso).
+
+**Artefatos**
+
+```text
+backend/src/modules/events/events.service.ts
+backend/src/modules/events/events.controller.ts
+backend/src/modules/events/events.module.ts
+backend/src/modules/events/events.service.spec.ts
+backend/src/modules/events/events.controller.spec.ts
+backend/test/events.e2e-spec.ts
+frontend/components/EventCard.js
+frontend/app/organizer/events/page.js
+frontend/app/organizer/events/[id]/edit/page.js
+docs/API.md
+```
+
 ---
+
+
 
 
 ## 5. Template para novos registros
