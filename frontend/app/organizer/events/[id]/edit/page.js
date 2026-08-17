@@ -164,6 +164,52 @@ export default function EditEventPage({ params: paramsPromise }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        'Tem certeza que deseja excluir este evento permanentemente? Esta ação não pode ser desfeita.',
+      )
+    ) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFeedback(null);
+
+    try {
+      await api.delete(`/events/${eventId}`);
+      setFeedback({
+        type: 'success',
+        message: 'Evento excluído com sucesso! Redirecionando...',
+      });
+      setTimeout(() => {
+        router.push('/organizer/events');
+      }, 1000);
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        if (err.code === 'EVENT_CANNOT_BE_DELETED') {
+          setFeedback({
+            type: 'error',
+            message:
+              'Não é possível excluir este evento pois ele já possui reservas ou ingressos emitidos.',
+          });
+        } else {
+          setFeedback({
+            type: 'error',
+            message: err.message || 'Erro ao excluir evento.',
+            details: err.details,
+          });
+        }
+      } else {
+        setFeedback({
+          type: 'error',
+          message: 'Falha inesperada ao tentar excluir o evento.',
+        });
+      }
+      setIsSubmitting(false);
+    }
+  };
+
   const statusInfo = event ? formatEventStatus(event.status) : null;
   const isDraft = event?.status === 'DRAFT';
 
@@ -312,8 +358,8 @@ export default function EditEventPage({ params: paramsPromise }) {
               </div>
 
               <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-between sm:items-center">
-                {isDraft ? (
-                  <>
+                <div className="flex items-center gap-3">
+                  {isDraft && (
                     <button
                       type="submit"
                       disabled={isSubmitting}
@@ -321,16 +367,27 @@ export default function EditEventPage({ params: paramsPromise }) {
                     >
                       {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
                     </button>
+                  )}
 
-                    <button
-                      type="button"
-                      onClick={handlePublish}
-                      disabled={isSubmitting}
-                      className="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 disabled:opacity-50 transition-colors"
-                    >
-                      {isSubmitting ? 'Publicando...' : 'Publicar Evento Agora'}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isSubmitting}
+                    className="rounded-xl border border-rose-900/40 bg-rose-950/20 px-4 py-2.5 text-sm font-medium text-rose-400 hover:bg-rose-900/40 hover:text-rose-200 disabled:opacity-50 transition-colors"
+                  >
+                    Excluir Evento
+                  </button>
+                </div>
+
+                {isDraft ? (
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={isSubmitting}
+                    className="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+                  >
+                    {isSubmitting ? 'Publicando...' : 'Publicar Evento Agora'}
+                  </button>
                 ) : (
                   <Link
                     href={`/events/${eventId}`}

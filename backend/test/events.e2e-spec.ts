@@ -17,6 +17,7 @@ import { OrganizerEventsController } from '../src/modules/events/organizer-event
 import { UserRole } from '../src/modules/users/enums/user-role.enum';
 import { UsersService } from '../src/modules/users/users.service';
 
+import { Reservation } from '../src/modules/reservations/entities/reservation.entity';
 import { Ticket } from '../src/modules/tickets/entities/ticket.entity';
 
 describe('Events Integration / E2E', () => {
@@ -61,6 +62,10 @@ describe('Events Integration / E2E', () => {
     save: jest.fn((event: Event) => {
       eventsDb.set(event.id, { ...event, updatedAt: new Date() });
       return Promise.resolve({ ...event });
+    }),
+    remove: jest.fn((event: Event) => {
+      eventsDb.delete(event.id);
+      return Promise.resolve(event);
     }),
     findOne: jest.fn(({ where }: { where: Record<string, unknown> }) => {
       for (const e of eventsDb.values()) {
@@ -160,6 +165,12 @@ describe('Events Integration / E2E', () => {
         {
           provide: getRepositoryToken(Ticket),
           useValue: mockTicketRepository,
+        },
+        {
+          provide: getRepositoryToken(Reservation),
+          useValue: {
+            count: jest.fn().mockResolvedValue(0),
+          },
         },
       ],
     }).compile();
@@ -449,6 +460,71 @@ describe('Events Integration / E2E', () => {
       const detailBody = detailRes.body as EventTestResponse;
       expect(detailBody.id).toBe(pubBody.id);
       expect(detailBody.availableTickets).toBe(200);
+    });
+
+    it('should allow owner to delete draft event (204) and reject other users / customers', async () => {
+      const token1 = await jwtService.signAsync({
+        sub: mockOrganizer1.id,
+        role: mockOrganizer1.role,
+      });
+
+      const token2 = await jwtService.signAsync({
+        sub: mockOrganizer2.id,
+        role: mockOrganizer2.role,
+      });
+
+      const customerToken = await jwtService.signAsync({
+        sub: mockCustomer.id,
+        role: mockCustomer.role,
+      });
+
+      const futureDate = new Date(
+        Date.now() + 1000 * 60 * 60 * 24 * 10,
+      ).toISOString();
+
+      // Create event by Organizer 1
+      const createRes = await request(app.getHttpServer())
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${token1}`)
+        .send({
+          externalCatalogId: '157336',
+          title: 'Event to Delete',
+          startsAt: futureDate,
+          location: 'Cine Elite',
+          capacity: 100,
+          price: '20.00',
+        })
+        .expect(201);
+
+      const eventId = (createRes.body as EventTestResponse).id;
+
+      // Customer cannot delete
+      await request(app.getHttpServer())
+        .delete(`/api/v1/events/${eventId}`)
+        .set('Authorization', `Bearer ${customerToken}`)
+        .expect(403);
+
+      // Organizer 2 cannot delete
+      const rejRes = await request(app.getHttpServer())
+        .delete(`/api/v1/events/${eventId}`)
+        .set('Authorization', `Bearer ${token2}`)
+        .expect(403);
+
+      expect((rejRes.body as ApiErrorTestResponse).code).toBe(
+        'EVENT_NOT_OWNED_BY_ORGANIZER',
+      );
+
+      // Organizer 1 can delete
+      await request(app.getHttpServer())
+        .delete(`/api/v1/events/${eventId}`)
+        .set('Authorization', `Bearer ${token1}`)
+        .expect(204);
+
+      // Deleting again returns 404
+      await request(app.getHttpServer())
+        .delete(`/api/v1/events/${eventId}`)
+        .set('Authorization', `Bearer ${token1}`)
+        .expect(404);
     });
   });
 });

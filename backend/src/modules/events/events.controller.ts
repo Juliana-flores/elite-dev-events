@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -156,6 +157,46 @@ export class EventsController {
     @Param('eventId') eventId: string,
   ): Promise<PublishEventResponseDto> {
     return this.eventsService.publish(user.id, eventId);
+  }
+
+  @Delete(':eventId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ORGANIZER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete an event owned by the organizer' })
+  @ApiParam({ name: 'eventId', description: 'Event UUID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Event successfully deleted',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - invalid or missing token',
+    type: ApiErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Forbidden - event not owned by organizer (EVENT_NOT_OWNED_BY_ORGANIZER)',
+    type: ApiErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Event not found (EVENT_NOT_FOUND)',
+    type: ApiErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description:
+      'Conflict - event cannot be deleted because it has reservations or tickets (EVENT_CANNOT_BE_DELETED)',
+    type: ApiErrorResponseDto,
+  })
+  delete(
+    @CurrentUser() user: jwtStrategy.AuthenticatedUser,
+    @Param('eventId') eventId: string,
+  ): Promise<void> {
+    return this.eventsService.delete(user.id, eventId);
   }
 
   @Get()

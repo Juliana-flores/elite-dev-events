@@ -534,7 +534,48 @@ ter preço >= 0
 
 ---
 
-## 10.4 GET /organizer/events
+## 10.4 DELETE /events/:eventId
+
+Exclui um evento pertencente ao organizador autenticado.
+
+### Autenticação
+
+```text
+ORGANIZER
+```
+
+### Request
+
+```http
+DELETE /api/v1/events/event-uuid
+```
+
+Sem body.
+
+### Response — 204 No Content
+
+Sem body.
+
+### Regras
+
+```text
+- O evento deve existir
+- O evento deve pertencer ao organizador autenticado
+- O evento não pode possuir ingressos ou reservas associadas
+```
+
+### Erros
+
+```text
+401 UNAUTHORIZED
+403 EVENT_NOT_OWNED_BY_ORGANIZER
+404 EVENT_NOT_FOUND
+409 EVENT_CANNOT_BE_DELETED
+```
+
+---
+
+## 10.5 GET /organizer/events
 
 Lista os eventos do organizador autenticado.
 
@@ -584,7 +625,7 @@ GET /api/v1/organizer/events?status=PUBLISHED&page=1&limit=20
 
 ---
 
-## 10.5 GET /events
+## 10.6 GET /events
 
 Lista eventos publicados para navegação.
 
@@ -651,7 +692,7 @@ Ele não precisa existir como coluna persistida.
 
 ---
 
-## 10.6 GET /events/:eventId
+## 10.7 GET /events/:eventId
 
 Retorna detalhes de um evento publicado.
 

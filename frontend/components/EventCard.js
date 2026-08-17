@@ -4,7 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { formatDate, formatPrice, formatEventStatus } from '../lib/formatters';
 
-export default function EventCard({ event, isOrganizer = false, onPublish }) {
+export default function EventCard({
+  event,
+  isOrganizer = false,
+  onPublish,
+  onDelete,
+}) {
   const {
     id,
     title,
@@ -88,32 +93,43 @@ export default function EventCard({ event, isOrganizer = false, onPublish }) {
 
         <div className="mt-5 border-t border-zinc-800/80 pt-4">
           {isOrganizer ? (
-            <div className="flex items-center gap-2">
-              {status === 'DRAFT' ? (
-                <>
-                  <Link
-                    href={`/organizer/events/${id}/edit`}
-                    className="flex-1 rounded-xl border border-zinc-700 bg-zinc-800 py-2 text-center text-xs font-semibold text-zinc-200 hover:bg-zinc-700 transition-colors"
-                  >
-                    Editar
-                  </Link>
-                  {onPublish && (
-                    <button
-                      type="button"
-                      onClick={() => onPublish(id)}
-                      className="flex-1 rounded-xl bg-emerald-600 py-2 text-center text-xs font-semibold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500 transition-colors"
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                {status === 'DRAFT' ? (
+                  <>
+                    <Link
+                      href={`/organizer/events/${id}/edit`}
+                      className="flex-1 rounded-xl border border-zinc-700 bg-zinc-800 py-2 text-center text-xs font-semibold text-zinc-200 hover:bg-zinc-700 transition-colors"
                     >
-                      Publicar
-                    </button>
-                  )}
-                </>
-              ) : (
-                <Link
-                  href={`/events/${id}`}
-                  className="w-full rounded-xl border border-indigo-500/30 bg-indigo-950/40 py-2 text-center text-xs font-semibold text-indigo-300 hover:bg-indigo-900/50 transition-colors"
+                      Editar
+                    </Link>
+                    {onPublish && (
+                      <button
+                        type="button"
+                        onClick={() => onPublish(id)}
+                        className="flex-1 rounded-xl bg-emerald-600 py-2 text-center text-xs font-semibold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-500 transition-colors"
+                      >
+                        Publicar
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href={`/events/${id}`}
+                    className="flex-1 rounded-xl border border-indigo-500/30 bg-indigo-950/40 py-2 text-center text-xs font-semibold text-indigo-300 hover:bg-indigo-900/50 transition-colors"
+                  >
+                    Ver Página Pública
+                  </Link>
+                )}
+              </div>
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(id)}
+                  className="w-full rounded-xl border border-rose-900/40 bg-rose-950/20 py-1.5 text-center text-xs font-medium text-rose-400 hover:bg-rose-900/40 hover:text-rose-200 transition-colors"
                 >
-                  Ver Página Pública
-                </Link>
+                  Excluir Evento
+                </button>
               )}
             </div>
           ) : (

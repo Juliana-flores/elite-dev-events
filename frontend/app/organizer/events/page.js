@@ -134,6 +134,46 @@ function OrganizerEventsList() {
     }
   };
 
+  const handleDelete = async (eventId) => {
+    if (
+      !confirm(
+        'Tem certeza que deseja excluir este evento? Esta ação removerá o evento permanentemente.',
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.delete(`/events/${eventId}`);
+      setActionFeedback({
+        type: 'success',
+        message: 'Evento excluído com sucesso!',
+      });
+      fetchOrganizerEvents();
+    } catch (err) {
+      if (err instanceof ApiClientError) {
+        if (err.code === 'EVENT_CANNOT_BE_DELETED') {
+          setActionFeedback({
+            type: 'error',
+            message:
+              'Não é possível excluir um evento que já possui ingressos ou reservas associadas.',
+          });
+        } else {
+          setActionFeedback({
+            type: 'error',
+            message: err.message || 'Erro ao excluir evento.',
+            details: err.details,
+          });
+        }
+      } else {
+        setActionFeedback({
+          type: 'error',
+          message: 'Falha inesperada ao tentar excluir o evento.',
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -221,6 +261,7 @@ function OrganizerEventsList() {
                 event={event}
                 isOrganizer
                 onPublish={handlePublish}
+                onDelete={handleDelete}
               />
             ))}
           </div>

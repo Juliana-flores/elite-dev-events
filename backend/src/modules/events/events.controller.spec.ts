@@ -41,6 +41,7 @@ describe('EventsController and OrganizerEventsController', () => {
     create: jest.fn(),
     updateDraft: jest.fn(),
     publish: jest.fn(),
+    delete: jest.fn(),
     findOrganizerEvents: jest.fn(),
     findPublicEvents: jest.fn(),
     findPublicEventById: jest.fn(),
@@ -135,6 +136,17 @@ describe('EventsController and OrganizerEventsController', () => {
       'event-uuid',
     );
     expect(result).toEqual(publishResponse);
+  });
+
+  it('should delete an event', async () => {
+    mockEventsService.delete.mockResolvedValue(undefined);
+
+    await eventsController.delete(mockOrganizerUser, 'event-uuid');
+
+    expect(mockEventsService.delete).toHaveBeenCalledWith(
+      mockOrganizerUser.id,
+      'event-uuid',
+    );
   });
 
   it('should find public events', async () => {

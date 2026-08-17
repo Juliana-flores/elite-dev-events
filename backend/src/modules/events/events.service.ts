@@ -10,6 +10,7 @@ import { ILike, In, Repository } from 'typeorm';
 
 import { Ticket } from '../tickets/entities/ticket.entity';
 import { TicketStatus } from '../tickets/enums/ticket-status.enum';
+import { Reservation } from '../reservations/entities/reservation.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import {
   EventDto,
@@ -31,6 +32,8 @@ export class EventsService {
     private readonly eventsRepository: Repository<Event>,
     @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
+    @InjectRepository(Reservation)
+    private readonly reservationRepository: Repository<Reservation>,
   ) {}
 
   async create(organizerId: string, createDto: CreateEventDto): Promise<Event> {
@@ -283,6 +286,54 @@ export class EventsService {
     });
 
     return this.mapToPublicEventDto(event, confirmedCount);
+  }
+
+  async delete(organizerId: string, eventId: string): Promise<void> {
+    const event = await this.eventsRepository.findOne({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      throw new NotFoundException({
+        statusCode: 404,
+        code: 'EVENT_NOT_FOUND',
+        message: 'Event not found',
+      });
+    }
+
+    if (event.organizerId !== organizerId) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        code: 'EVENT_NOT_OWNED_BY_ORGANIZER',
+        message: 'You can only delete your own events',
+      });
+    }
+
+    const ticketCount = await this.ticketRepository.count({
+      where: { eventId },
+    });
+
+    if (ticketCount > 0) {
+      throw new ConflictException({
+        statusCode: 409,
+        code: 'EVENT_CANNOT_BE_DELETED',
+        message: 'Cannot delete an event that already has tickets issued',
+      });
+    }
+
+    const reservationCount = await this.reservationRepository.count({
+      where: { eventId },
+    });
+
+    if (reservationCount > 0) {
+      throw new ConflictException({
+        statusCode: 409,
+        code: 'EVENT_CANNOT_BE_DELETED',
+        message: 'Cannot delete an event that already has reservations',
+      });
+    }
+
+    await this.eventsRepository.remove(event);
   }
 
   private mapToEventDto(event: Event): EventDto {
