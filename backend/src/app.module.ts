@@ -26,19 +26,11 @@ import { UsersModule } from './modules/users/users.module';
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
 
-        host: configService.getOrThrow<string>('DATABASE_HOST'),
-        port: Number(configService.getOrThrow<string>('DATABASE_PORT')),
-
-        username: configService.getOrThrow<string>('DATABASE_USER'),
-
-        password: configService.getOrThrow<string>('DATABASE_PASSWORD'),
-
-        database: configService.getOrThrow<string>('DATABASE_NAME'),
+        url: configService.getOrThrow<string>('DATABASE_URL'),
 
         driver: pg,
 
         autoLoadEntities: true,
-
         synchronize: false,
       }),
     }),
@@ -55,4 +47,4 @@ import { UsersModule } from './modules/users/users.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
