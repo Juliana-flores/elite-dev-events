@@ -1,3 +1,4 @@
+import * as pg from 'pg';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -33,6 +34,8 @@ import { UsersModule } from './modules/users/users.module';
         password: configService.getOrThrow<string>('DATABASE_PASSWORD'),
 
         database: configService.getOrThrow<string>('DATABASE_NAME'),
+
+        driver: pg,
 
         autoLoadEntities: true,
 

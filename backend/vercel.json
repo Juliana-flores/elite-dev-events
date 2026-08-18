@@ -1,9 +1,4 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "framework": "nestjs",
-    "functions": {
-        "api/**": {
-            "includeFiles": "node_modules/pg/**"
-        }
-    }
+    "framework": "nestjs"
 }
