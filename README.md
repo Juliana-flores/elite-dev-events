@@ -69,7 +69,7 @@ O container subirá na porta `5432` com as seguintes credenciais padrão:
 - **Porta**: `5432`
 - **Database**: `postgres`
 - **User**: `postgres`
-- **Password**: `postgres` (ou configurado no `.env`)
+- **Password**: `seupassword` 
 
 ---
 
@@ -140,7 +140,7 @@ O container subirá na porta `5432` com as seguintes credenciais padrão:
 
 A documentação interativa completa do Swagger com especificações de endpoints, esquemas DTO e autenticação JWT Bearer está disponível em:
 
-👉 **[http://localhost:3001/api/docs](http://localhost:3001/api/docs)**
+👉 **[/api/docs](/api/docs)**
 
 ### Principais Módulos da API (`/api/v1`)
 
